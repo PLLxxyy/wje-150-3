@@ -36,3 +36,13 @@ export interface Book {
   publishTime: number;
   city: string;
 }
+
+export interface Review {
+  id: string;
+  bookId: string;
+  userId: string;
+  nickname: string;
+  rating: number;
+  comment: string;
+  timestamp: number;
+}

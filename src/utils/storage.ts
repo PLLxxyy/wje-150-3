@@ -1,10 +1,11 @@
-import type { Book, DriftRecord, User } from '../types';
+import type { Book, DriftRecord, User, Review } from '../types';
 
 const KEYS = {
   books: 'drift_books',
   records: 'drift_records',
   user: 'drift_current_user',
   seeded: 'drift_seeded',
+  reviews: 'drift_reviews',
 };
 
 function read<T>(key: string, fallback: T): T {
@@ -70,5 +71,41 @@ export const storage = {
   },
   markSeeded(): void {
     localStorage.setItem(KEYS.seeded, '1');
+  },
+
+  getReviews(): Review[] {
+    return read<Review[]>(KEYS.reviews, []);
+  },
+  setReviews(reviews: Review[]): void {
+    write(KEYS.reviews, reviews);
+  },
+  getReviewsByBook(bookId: string): Review[] {
+    return this.getReviews().filter((r) => r.bookId === bookId).sort((a, b) => b.timestamp - a.timestamp);
+  },
+  getReviewsByUser(userId: string): Review[] {
+    return this.getReviews().filter((r) => r.userId === userId).sort((a, b) => b.timestamp - a.timestamp);
+  },
+  getReviewByUserAndBook(userId: string, bookId: string): Review | undefined {
+    return this.getReviews().find((r) => r.userId === userId && r.bookId === bookId);
+  },
+  getAverageRating(bookId: string): number {
+    const reviews = this.getReviewsByBook(bookId);
+    if (reviews.length === 0) return 0;
+    const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+    return Math.round((sum / reviews.length) * 10) / 10;
+  },
+  addReview(review: Review): void {
+    const reviews = this.getReviews();
+    const existingIndex = reviews.findIndex((r) => r.userId === review.userId && r.bookId === review.bookId);
+    if (existingIndex >= 0) {
+      reviews[existingIndex] = review;
+    } else {
+      reviews.unshift(review);
+    }
+    this.setReviews(reviews);
+  },
+  deleteReview(reviewId: string): void {
+    const reviews = this.getReviews().filter((r) => r.id !== reviewId);
+    this.setReviews(reviews);
   },
 };

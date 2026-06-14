@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../utils/storage';
 import { id } from '../utils/seed';
 import { useToast } from '../components/Toast';
 import { DriftTimeline } from '../components/DriftTimeline';
+import type { Review } from '../types';
 
 const coverEmojis: Record<string, string> = {
   '文学': '📖', '科技': '💻', '生活': '🌿', '童书': '🧸',
@@ -26,7 +27,34 @@ export const BookDetail: React.FC = () => {
   const [targetNickname, setTargetNickname] = useState('');
   const [targetCity, setTargetCity] = useState('');
 
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [myRating, setMyRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [myComment, setMyComment] = useState('');
+  const [myExistingReview, setMyExistingReview] = useState<Review | null>(null);
+
   const book = storage.getBookById(bookId || '');
+
+  useEffect(() => {
+    if (book) {
+      refreshReviews();
+    }
+  }, [book?.id]);
+
+  const refreshReviews = () => {
+    if (!book) return;
+    const allReviews = storage.getReviewsByBook(book.id);
+    setReviews(allReviews);
+    const mine = storage.getReviewByUserAndBook(user.id, book.id);
+    setMyExistingReview(mine || null);
+    if (mine) {
+      setMyRating(mine.rating);
+      setMyComment(mine.comment);
+    }
+  };
+
+  const averageRating = book ? storage.getAverageRating(book.id) : 0;
+
   if (!book) {
     return (
       <div className="empty-state">
@@ -41,6 +69,67 @@ export const BookDetail: React.FC = () => {
   const isHolder = book.currentHolderId === user.id;
   const isPublisher = book.publisherId === user.id;
   const cities = [...new Set(records.map((r) => r.city))];
+
+  const handleSubmitReview = () => {
+    if (myRating === 0) {
+      showToast('请选择评分', 'error');
+      return;
+    }
+    if (!myComment.trim()) {
+      showToast('请填写评价内容', 'error');
+      return;
+    }
+    const now = Date.now();
+    const review: Review = {
+      id: myExistingReview?.id || id(),
+      bookId: book.id,
+      userId: user.id,
+      nickname: user.nickname,
+      rating: myRating,
+      comment: myComment.trim(),
+      timestamp: now,
+    };
+    storage.addReview(review);
+    showToast(myExistingReview ? '评价已更新' : '评价成功', 'success');
+    refreshReviews();
+  };
+
+  const handleDeleteReview = (reviewId: string) => {
+    if (confirm('确定要删除这条评价吗？')) {
+      storage.deleteReview(reviewId);
+      showToast('评价已删除', 'success');
+      setMyRating(0);
+      setMyComment('');
+      refreshReviews();
+    }
+  };
+
+  const renderStars = (rating: number, interactive = false, size = 'normal') => {
+    const stars = [];
+    const starSize = size === 'small' ? '14px' : size === 'large' ? '28px' : '20px';
+    for (let i = 1; i <= 5; i++) {
+      const filled = i <= (hoverRating && interactive ? hoverRating : rating);
+      const hover = interactive && i <= hoverRating;
+      stars.push(
+        <span
+          key={i}
+          className={`star ${filled ? 'filled' : ''} ${hover ? 'hover' : ''}`}
+          style={{ fontSize: starSize }}
+          onClick={interactive ? () => setMyRating(i) : undefined}
+          onMouseEnter={interactive ? () => setHoverRating(i) : undefined}
+          onMouseLeave={interactive ? () => setHoverRating(0) : undefined}
+        >
+          ★
+        </span>
+      );
+    }
+    return <div className={interactive ? 'rating-input' : 'rating-stars-display'}>{stars}</div>;
+  };
+
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  };
 
   const handleSend = () => {
     if (!targetNickname.trim()) { showToast('请输入对方昵称', 'error'); return; }
@@ -164,6 +253,78 @@ export const BookDetail: React.FC = () => {
 
       {/* Timeline */}
       <DriftTimeline records={records} />
+
+      {/* Rating & Reviews */}
+      <div className="rating-section">
+        <div className="rating-header">
+          <div className="rating-score">{averageRating > 0 ? averageRating.toFixed(1) : '暂无'}</div>
+          <div>
+            {renderStars(Math.round(averageRating))}
+            <div className="rating-count">{reviews.length} 条评价</div>
+          </div>
+        </div>
+
+        <div className="review-form">
+          <div className="form-label" style={{ fontSize: 14, fontWeight: 600, color: 'var(--gray-700)', marginBottom: 6 }}>
+            {myExistingReview ? '更新我的评价' : '写下你的评价'}
+          </div>
+          {myExistingReview && (
+            <div className="my-review-card">
+              <div className="my-review-label">你已评价过这本书，可以修改或删除</div>
+            </div>
+          )}
+          <div style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 4 }}>点击星星评分</div>
+          {renderStars(myRating, true, 'large')}
+          <textarea
+            className="form-textarea"
+            value={myComment}
+            onChange={(e) => setMyComment(e.target.value)}
+            placeholder="分享你对这本书的看法..."
+            rows={4}
+          />
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button className="btn btn-primary" onClick={handleSubmitReview}>
+              {myExistingReview ? '更新评价' : '提交评价'}
+            </button>
+            {myExistingReview && (
+              <button className="btn btn-secondary" onClick={() => handleDeleteReview(myExistingReview.id)}>
+                删除评价
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="review-list">
+          {reviews.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 32, color: 'var(--gray-400)' }}>
+              暂无评价，来做第一个评价的人吧
+            </div>
+          ) : (
+            reviews.map((review) => (
+              <div key={review.id} className="review-item">
+                <div className="review-header">
+                  <div className="review-user">
+                    <div className="review-avatar">{review.nickname.charAt(0)}</div>
+                    <div>
+                      <div className="review-nickname">{review.nickname}</div>
+                      <div className="review-time">{formatDate(review.timestamp)}</div>
+                    </div>
+                  </div>
+                  <div className="review-rating">{renderStars(review.rating, false, 'small')}</div>
+                </div>
+                <div className="review-comment">{review.comment}</div>
+                {review.userId === user.id && (
+                  <div className="review-actions">
+                    <button className="review-delete-btn" onClick={() => handleDeleteReview(review.id)}>
+                      删除
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
 
       {/* Send Modal */}
       {showSendModal && (

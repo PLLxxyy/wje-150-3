@@ -277,6 +277,37 @@
         .navbar-link { padding: 6px 10px; font-size: 13px; }
       }
 
+      /* ===== Rating & Reviews ===== */
+      .rating-section { background: #fff; border-radius: var(--radius); padding: 20px; margin: 24px 0; box-shadow: var(--shadow); }
+      .rating-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+      .rating-score { font-size: 48px; font-weight: 700; color: var(--warning); line-height: 1; }
+      .rating-stars-display { display: flex; gap: 2px; }
+      .rating-stars-display .star { font-size: 20px; color: var(--gray-300); }
+      .rating-stars-display .star.filled { color: var(--warning); }
+      .rating-count { font-size: 13px; color: var(--gray-500); margin-top: 4px; }
+      .rating-input { display: flex; gap: 4px; margin: 8px 0 12px; }
+      .rating-input .star { font-size: 28px; color: var(--gray-300); cursor: pointer; transition: transform 0.15s, color 0.15s; }
+      .rating-input .star:hover { transform: scale(1.1); }
+      .rating-input .star.filled, .rating-input .star.hover { color: var(--warning); }
+      .review-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--gray-200); }
+      .review-list { margin-top: 16px; }
+      .review-item { padding: 16px 0; border-bottom: 1px solid var(--gray-100); }
+      .review-item:last-child { border-bottom: none; }
+      .review-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+      .review-user { display: flex; align-items: center; gap: 8px; }
+      .review-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; }
+      .review-nickname { font-weight: 600; font-size: 14px; }
+      .review-time { font-size: 12px; color: var(--gray-400); }
+      .review-rating { display: flex; gap: 2px; }
+      .review-rating .star { font-size: 14px; color: var(--gray-300); }
+      .review-rating .star.filled { color: var(--warning); }
+      .review-comment { font-size: 14px; color: var(--gray-700); line-height: 1.6; }
+      .review-actions { display: flex; gap: 8px; margin-top: 8px; }
+      .review-delete-btn { background: none; border: none; color: var(--danger); font-size: 12px; cursor: pointer; padding: 0; }
+      .review-delete-btn:hover { text-decoration: underline; }
+      .my-review-card { background: var(--primary-light); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 16px; }
+      .my-review-label { font-size: 12px; color: var(--primary); font-weight: 600; margin-bottom: 4px; }
+
       /* ===== Misc ===== */
       .section-title { font-size: 18px; font-weight: 700; margin: 24px 0 12px; }
       .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
